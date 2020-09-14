@@ -1,0 +1,87 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+	id 'java'
+	id 'groovy'
+	id 'idea'
+	id 'maven-publish'
+	id 'distribution'
+	id 'com.palantir.git-version' version '0.12.3'
+}
+
+group = 'com.nbuesing.connect'
+description = 'kafka-connect-smt'
+
+version = '1.0.0'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+//sourceCompatibility = JavaVersion.VERSION_11
+//targetCompatibility = JavaVersion.VERSION_11
+
+repositories {
+	mavenLocal()
+	mavenCentral()
+	jcenter()
+	maven {
+		url "http://packages.confluent.io/maven/"
+	}
+}
+
+dependencies {
+	implementation "org.apache.kafka:connect-api:${kafka_version}"
+	implementation "org.apache.kafka:connect-transforms:${kafka_version}"
+	implementation "io.confluent:kafka-connect-avro-converter:${confluent_io_version}"
+
+	// lombok dependencies
+	compileOnly "org.projectlombok:lombok:${lombok_version}"
+	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+
+	testCompileOnly "org.projectlombok:lombok:${lombok_version}"
+	testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
+
+	testCompile group: 'junit', name: 'junit', version: junit_version
+	testCompile group: 'org.spockframework', name: 'spock-core', version: spockframework_version
+
+}
+
+distributions {
+	main {
+		baseName = "kafka-connect-smt"
+		contents {
+			from("docs/manifest.json") {
+				filter(ReplaceTokens, tokens: [
+						name   : "${project.name}" as String,
+						version: "${project.version}" as String
+				]
+				)
+			}
+			into("doc/") {
+				from(project.projectDir) {
+					include("LICENSE*")
+					include("README*")
+					include("NOTICE*")
+				}
+				from("${project.projectDir}/docs") {
+					include("*.png")
+				}
+			}
+			into("etc/") {
+				from("config")
+			}
+			into("assets/") {
+			}
+			into("lib/") {
+				from(jar)
+				from(configurations.runtimeClasspath)
+			}
+		}
+	}
+}
+
+idea{
+	module{
+		inheritOutputDirs = false
+		outputDir = compileJava.destinationDir
+		testOutputDir = compileTestJava.destinationDir
+	}
+}
